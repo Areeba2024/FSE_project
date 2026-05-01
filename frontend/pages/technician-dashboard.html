@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCMS — Technician Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">⚡ SCMS</div>
+      <div class="logo-sub">Technician Portal</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Portal</div>
+      <a class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">◼</span>Dashboard</a>
+      <a class="nav-item" onclick="showSection('assigned')"><span class="nav-icon">📋</span>Assigned Tasks</a>
+      <a class="nav-item" onclick="showSection('completed')"><span class="nav-icon">✅</span>Completed</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="tech-avatar">T</div>
+        <div>
+          <div class="user-name" id="tech-name">Technician</div>
+          <div class="user-role">Service Staff</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Technician Dashboard</div>
+    </div>
+
+    <div class="page-body">
+
+      <section id="sec-dashboard">
+        <div class="page-header">
+          <h2>My Workboard</h2>
+          <p>Tasks assigned to you for resolution</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card accent"><div class="stat-label">Total Assigned</div><div class="stat-value" id="t-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" id="t-pending" style="color:#D46000">—</div></div>
+          <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" id="t-progress" style="color:var(--accent2)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Resolved</div><div class="stat-value" id="t-resolved" style="color:var(--success)">—</div></div>
+        </div>
+        <div class="table-card" id="active-tasks-wrap">
+          <div class="table-header"><h3>Active Tasks</h3></div>
+          <div id="active-tasks-body"></div>
+        </div>
+      </section>
+
+      <section id="sec-assigned" style="display:none">
+        <div class="page-header"><h2>All Assigned Tasks</h2><p>Your full task list</p></div>
+        <div class="table-card"><div id="assigned-body"></div></div>
+      </section>
+
+      <section id="sec-completed" style="display:none">
+        <div class="page-header"><h2>Completed Tasks</h2><p>Resolved complaints</p></div>
+        <div class="table-card"><div id="completed-body"></div></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal-overlay" id="progress-modal" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('progress-modal').style.display='none'">✕</button>
+    <h3>Update Work Status</h3>
+    <p class="text-muted text-sm" style="margin-bottom:1rem">Complaint #<span id="progress-cid"></span></p>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="progress-status">
+        <option value="in_progress">In Progress — I've started working</option>
+        <option value="resolved">Resolved — Issue fixed!</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Work Notes</label>
+      <textarea id="progress-notes" placeholder="What did you do to resolve this?"></textarea>
+    </div>
+    <button class="btn-primary" onclick="submitProgress()">Update</button>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:5000/api';
+const user = JSON.parse(localStorage.getItem('scms_user') || '{}');
+const token = localStorage.getItem('scms_token');
+if (!token || user.role !== 'technician') window.location.href = 'login.html';
+
+const h = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` });
+document.getElementById('tech-name').textContent = user.name || 'Tech';
+document.getElementById('tech-avatar').textContent = (user.name || 'T')[0];
+
+function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+function statusBadge(s) { return `<span class="badge-status badge-${s}">${s.replace('_',' ')}</span>`; }
+function catBadge(c) { return `<span class="cat-badge cat-${c}">${c}</span>`; }
+
+const sections = ['dashboard', 'assigned', 'completed'];
+function showSection(name) {
+  sections.forEach(s => document.getElementById('sec-'+s).style.display = s === name ? '' : 'none');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item')[sections.indexOf(name)]?.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'assigned') loadAll();
+  if (name === 'completed') loadCompleted();
+}
+
+async function loadDashboard() {
+  const [statsRes, taskRes] = await Promise.all([
+    fetch(`${API}/technician/stats`, { headers: h() }),
+    fetch(`${API}/technician/complaints`, { headers: h() })
+  ]);
+  const statsData = await statsRes.json();
+  const taskData = await taskRes.json();
+  if (statsData.success) {
+    const s = statsData.stats;
+    document.getElementById('t-total').textContent = s.total || 0;
+    document.getElementById('t-pending').textContent = s.pending || 0;
+    document.getElementById('t-progress').textContent = s.in_progress || 0;
+    document.getElementById('t-resolved').textContent = s.resolved || 0;
+  }
+  if (taskData.success) {
+    const active = taskData.complaints.filter(c => ['assigned','in_progress'].includes(c.status));
+    document.getElementById('active-tasks-body').innerHTML = active.length ? taskTable(active, true) :
+      '<div class="empty-state"><div class="empty-icon">✅</div><h3>No active tasks</h3><p>All caught up!</p></div>';
+  }
+}
+
+function taskTable(complaints, showAction = false) {
+  return `<table><thead><tr><th>#ID</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>User</th><th>Assigned</th>${showAction?'<th>Action</th>':''}</tr></thead><tbody>${
+    complaints.map(c => `<tr>
+      <td><code>#${c.id}</code></td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.title}</td>
+      <td>${catBadge(c.category)}</td>
+      <td><span class="pri-${c.priority}">${c.priority}</span></td>
+      <td>${statusBadge(c.status)}</td>
+      <td class="text-sm text-muted">${c.user_name}</td>
+      <td class="text-sm text-muted">${new Date(c.assigned_at).toLocaleDateString()}</td>
+      ${showAction ? `<td><button class="btn-primary btn-sm" onclick="openProgress(${c.id})">Update</button></td>` : ''}
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+async function loadAll() {
+  const res = await fetch(`${API}/technician/complaints`, { headers: h() });
+  const data = await res.json();
+  document.getElementById('assigned-body').innerHTML = data.complaints?.length ? taskTable(data.complaints, true) : '<div class="empty-state"><div class="empty-icon">📋</div><h3>No tasks assigned</h3></div>';
+}
+
+async function loadCompleted() {
+  const res = await fetch(`${API}/technician/complaints?status=resolved`, { headers: h() });
+  const data = await res.json();
+  document.getElementById('completed-body').innerHTML = data.complaints?.length ? taskTable(data.complaints, false) : '<div class="empty-state"><div class="empty-icon">📂</div><h3>No completed tasks yet</h3></div>';
+}
+
+let currentId = null;
+function openProgress(id) {
+  currentId = id;
+  document.getElementById('progress-cid').textContent = id;
+  document.getElementById('progress-modal').style.display = 'flex';
+}
+async function submitProgress() {
+  const status = document.getElementById('progress-status').value;
+  const remarks = document.getElementById('progress-notes').value;
+  const res = await fetch(`${API}/technician/complaints/${currentId}/progress`, { method:'PUT', headers: h(), body: JSON.stringify({ status, remarks }) });
+  const data = await res.json();
+  if (data.success) { document.getElementById('progress-modal').style.display='none'; loadDashboard(); }
+  else alert(data.message);
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

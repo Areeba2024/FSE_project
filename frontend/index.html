@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCMS — Smart Complaint & Service Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;min-height:100vh;background:linear-gradient(135deg,#0F2744 0%,#1A3C5E 50%,#1E5090 100%);display:flex;align-items:center;justify-content:center;padding:2rem}
+    h1,h2,.brand{font-family:'Syne',sans-serif}
+    .hero{max-width:900px;width:100%;text-align:center;color:#fff}
+    .badge{display:inline-block;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:6px 16px;border-radius:20px;font-size:0.8rem;margin-bottom:1.5rem;letter-spacing:0.04em}
+    .icon{font-size:3.5rem;margin-bottom:1rem}
+    h1{font-size:3rem;font-weight:800;letter-spacing:-1px;margin-bottom:1rem;line-height:1.1}
+    .sub{font-size:1.1rem;color:rgba(255,255,255,0.7);max-width:560px;margin:0 auto 2.5rem;line-height:1.6}
+    .cta-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:3rem}
+    .btn-w{background:#fff;color:#1A3C5E;padding:0.9rem 2rem;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-block}
+    .btn-w:hover{background:#EAF0F8;transform:translateY(-2px)}
+    .btn-o{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.4);padding:0.9rem 2rem;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;text-decoration:none;transition:all 0.2s;display:inline-block}
+    .btn-o:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.7)}
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:2rem}
+    .feat{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:1.5rem;text-align:left}
+    .feat-icon{font-size:1.6rem;margin-bottom:0.75rem}
+    .feat h3{font-size:0.95rem;font-weight:600;margin-bottom:0.4rem;color:#fff}
+    .feat p{font-size:0.82rem;color:rgba(255,255,255,0.6);line-height:1.5}
+    .roles{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap}
+    .role-chip{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);padding:6px 14px;border-radius:20px;font-size:0.82rem}
+    @media(max-width:600px){h1{font-size:2rem}.features{grid-template-columns:1fr}.cta-row{flex-direction:column;align-items:center}}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="badge">⚡ SCMS v1.0 — Web-Based Platform</div>
+    <div class="icon">🏛️</div>
+    <h1>Smart Complaint &amp;<br>Service Management</h1>
+    <p class="sub">A centralized digital platform for submitting, tracking, and resolving service-related complaints in universities, offices, and organizations.</p>
+    <div class="cta-row">
+      <a href="pages/login.html" class="btn-w">Sign In →</a>
+      <a href="pages/register.html" class="btn-o">Create Account</a>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="feat-icon">📋</div>
+        <h3>Complaint Submission</h3>
+        <p>Submit electricity, internet, plumbing, HVAC and other service complaints with priority levels and attachments.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">👷</div>
+        <h3>Technician Assignment</h3>
+        <p>Admins assign complaints to technicians. Real-time status tracking keeps users informed at every step.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">📊</div>
+        <h3>Analytics Dashboard</h3>
+        <p>Visual reports on complaint volumes, resolution rates, category breakdowns, and satisfaction scores.</p>
+      </div>
+    </div>
+    <div class="roles">
+      <span class="role-chip">👤 Students / Employees</span>
+      <span class="role-chip">🛡️ Administrators</span>
+      <span class="role-chip">🔧 Technicians</span>
+      <span class="role-chip">⚡ Super Admin</span>
+    </div>
+  </div>
+  <script>
+    // Auto-redirect if already logged in
+    const token = localStorage.getItem('scms_token');
+    const user = JSON.parse(localStorage.getItem('scms_user') || '{}');
+    if (token && user.role) {
+      const map = { admin: 'pages/admin-dashboard.html', superadmin: 'pages/admin-dashboard.html', technician: 'pages/technician-dashboard.html', user: 'pages/user-dashboard.html' };
+      if (map[user.role]) window.location.href = map[user.role];
+    }
+  </script>
+</body>
+</html>

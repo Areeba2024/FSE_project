@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCMS — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <div class="auth-brand">
+      <div class="brand-icon">⚡</div>
+      <h1 class="brand-name">SCMS</h1>
+      <p class="brand-tagline">Smart Complaint & Service Management</p>
+    </div>
+    <div class="auth-card">
+      <h2>Sign In</h2>
+      <div id="error-msg" class="error-banner" style="display:none"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="you@university.edu" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary btn-full" id="submit-btn">
+          <span>Sign In</span>
+        </button>
+      </form>
+      <p class="auth-switch">Don't have an account? <a href="register.html">Register here</a></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.innerHTML = '<span class="spinner"></span> Signing in...';
+      btn.disabled = true;
+      let data;
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value })
+        });
+        data = await res.json();
+      } catch(e) {
+        document.getElementById('error-msg').textContent = 'Cannot connect to server. Make sure backend is running.';
+        document.getElementById('error-msg').style.display = 'block';
+        btn.innerHTML = '<span>Sign In</span>'; btn.disabled = false; return;
+      }
+      if (data.success) {
+        localStorage.setItem('scms_token', data.token);
+        localStorage.setItem('scms_user', JSON.stringify(data.user));
+        const role = data.user.role;
+        if (role === 'admin' || role === 'superadmin') window.location.href = 'admin-dashboard.html';
+        else if (role === 'technician') window.location.href = 'technician-dashboard.html';
+        else window.location.href = 'user-dashboard.html';
+      } else {
+        document.getElementById('error-msg').textContent = data.message || 'Invalid email or password';
+        document.getElementById('error-msg').style.display = 'block';
+        btn.innerHTML = '<span>Sign In</span>';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
